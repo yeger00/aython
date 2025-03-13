@@ -1,2 +1,2 @@
 __version__ = "0.1.0"
-__all__ = ["aipython"]
+__all__ = ["aithon"]
