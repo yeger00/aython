@@ -1,24 +1,24 @@
-[project]
+[tool.poetry]
 name = "aython"
 version = "0.1.0"
-description = "Python and Warp had a baby"
-authors = [
-    { name = "Avi Yeger", email = "yeger00@gmail.com" }
-]
-dependencies = [
-    "pathspec>=0.11.0",
-]
-requires-python = ">=3.7"
+description = "A Warp-like Python command palette built with Textual"
+authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-license = { text = "MIT" }
+packages = [{include = "aython", from = "src"}]
 
-[project.optional-dependencies]
-test = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "ruff>=0.2.0",
-]
+[tool.poetry.dependencies]
+python = "^3.8"
+textual = "^0.52.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+black = "^24.0.0"
+isort = "^5.13.0"
+textual-dev = "^1.4.0"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+aython = "aython:run"
