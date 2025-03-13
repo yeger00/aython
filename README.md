@@ -11,10 +11,17 @@ A Warp-like Python command palette built with Textual. Execute Python commands i
 # Clone the repository
 git clone https://github.com/yeger00/aython.git
 cd aython
-# Install with poetry
-poetry install
+
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e .
+
 # Run the application
-poetry run aython
+aython
 ```
 
 ## Development
@@ -23,19 +30,20 @@ poetry run aython
 
 First, make sure you have the development dependencies installed:
 ```bash
-
 # Install with dev dependencies
-poetry install --with dev
+uv pip install -e .[dev]
 ```
 
 Then you can run the tests:
 ```bash
 # Run all tests
-poetry run pytest
+pytest
+
 # Run tests with output
-poetry run pytest -v
+pytest -v
+
 # Run tests with coverage
-poetry run pytest --cov=aython
+pytest --cov=aython
 ```
 
 ### Continuous Integration
@@ -46,6 +54,7 @@ The project uses GitHub Actions to run tests automatically on:
 - Pushes to main branch
 
 The CI pipeline:
-- Runs tests on Python 3.8, 3.9, 3.10, and 3.11
+- Runs tests on Python 3.9, 3.10, and 3.11
+- Uses uv for fast dependency installation
 - Generates and uploads test coverage reports
-- Caches dependencies for faster builds
+- Caches virtual environments for faster builds

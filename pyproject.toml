@@ -1,13 +1,13 @@
-[tool.poetry]
+[project]
 name = "aython"
 version = "0.1.0"
 description = "A Warp-like Python command palette built with Textual"
-authors = ["Your Name <your.email@example.com>"]
+authors = [{name = "Avi Yeger", email = "yeger00@gmail.com"}]
 readme = "README.md"
 packages = [{include = "aython", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 textual = "^0.52.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -15,6 +15,7 @@ pytest = "^7.0.0"
 black = "^24.0.0"
 isort = "^5.13.0"
 textual-dev = "^1.4.0"
+pytest-cov = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
