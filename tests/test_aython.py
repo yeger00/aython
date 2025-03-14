@@ -5,7 +5,7 @@ from aython import PythonCommandPalette, CommandResult
 @pytest.mark.asyncio
 async def test_basic_command_execution():
     """Test that basic Python commands execute correctly"""
-    async with Pilot(PythonCommandPalette()) as pilot:
+    async with PythonCommandPalette().run_test() as pilot:
         # Get references to widgets
         input_widget = pilot.app.query_one("#command_input")
         output_widget = pilot.app.query_one("#output")
@@ -25,7 +25,7 @@ async def test_basic_command_execution():
 @pytest.mark.asyncio
 async def test_error_handling():
     """Test that errors are properly caught and displayed"""
-    async with Pilot(PythonCommandPalette()) as pilot:
+    async with PythonCommandPalette().run_test() as pilot:
         output_widget = pilot.app.query_one("#output")
         
         # Test syntax error
@@ -38,7 +38,7 @@ async def test_error_handling():
 @pytest.mark.asyncio
 async def test_clear_command():
     """Test that the clear command (Ctrl+K) works"""
-    async with Pilot(PythonCommandPalette()) as pilot:
+    async with PythonCommandPalette().run_test() as pilot:
         output_widget = pilot.app.query_one("#output")
         
         # First add some output
