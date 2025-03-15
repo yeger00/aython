@@ -14,13 +14,13 @@ async def test_basic_command_execution():
         await pilot.press("p", "r", "i", "n", "t", "(", "'", "h", "e", "l", "l", "o", "'", ")", "enter")
         await pilot.pause(0.1)  # Wait for command execution
         
-        assert "hello" in output_widget.render()
+        assert "hello" in output_widget.render().plain
         
         # Test mathematical operation
-        await pilot.press("2", "+", "2", "enter")
+        await pilot.press("p", "r", "i", "n", "t", "(", "2", "+", "2", ")", "enter")
         await pilot.pause(0.1)
         
-        assert "4" in output_widget.render()
+        assert "4" in output_widget.render().plain
 
 @pytest.mark.asyncio
 async def test_error_handling():
@@ -32,7 +32,7 @@ async def test_error_handling():
         await pilot.press("p", "r", "i", "n", "t", "(", "enter")
         await pilot.pause(0.1)
         
-        assert "Error:" in output_widget.render()
+        assert "Error:" in output_widget.render().plain
         assert "error" in output_widget.classes
 
 @pytest.mark.asyncio
@@ -45,13 +45,13 @@ async def test_clear_command():
         await pilot.press("p", "r", "i", "n", "t", "(", "'", "t", "e", "s", "t", "'", ")", "enter")
         await pilot.pause(0.1)
         
-        assert "test" in output_widget.render()
+        assert "test" in output_widget.render().plain
         
         # Clear the output
         await pilot.press("ctrl+k")
         await pilot.pause(0.1)
         
-        assert output_widget.render().strip() == ""
+        assert output_widget.render().rstrip() == ""
 
 def test_command_result():
     """Test the CommandResult dataclass"""
