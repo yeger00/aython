@@ -6,8 +6,9 @@ authors = [{name = "Avi Yeger", email = "yeger00@gmail.com"}]
 readme = "README.md"
 license = {text = "MIT"}
 dependencies = [
-    "textual>=2.1.2",
-    "textual-textarea>=0.14.4",
+    "litellm>=1.0.0",
+    "ipython>=8.0.0",
+    "pydantic>=2.0.0",
 ]
 requires-python = ">=3.11"
 packages = [{include = "aython", from = "src"}]

@@ -1,69 +1,67 @@
-# Aython
+# Aython: Your AI-Powered Python Assistant in IPython
 
-![Tests](https://github.com/yeger00/aython/actions/workflows/test.yml/badge.svg)
+Aython is an IPython extension that brings the power of large language models (LLMs) directly into your interactive Python sessions. Generate functions, get coding assistance, and streamline your workflow without ever leaving your terminal.
 
-A Warp-like Python command palette built with Textual. Execute Python commands in a beautiful TUI environment, combining the power of Python with the elegance of Warp's interface.
+## Installation
 
-## Quick Start
+1.  **Install from PyPI (once published):**
 
-### Installation
-```bash
-# Clone the repository
-git clone https://github.com/yeger00/aython.git
-cd aython
+    ```bash
+    pip install aython
+    ```
 
-# Install uv (if not already installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+2.  **Or, install directly from the source for development:**
 
-# Create virtual environment and install dependencies
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e '.[dev]'
+    ```bash
+    pip install -e .
+    ```
 
-# Run the application
-aython
-```
+## Usage
 
-## Features
+1.  **Load the extension in your IPython session:**
 
-- Syntax highlighting with TextArea editor
-- Multi-line code editing
-- Code execution with Ctrl+Enter
-- Save functionality with Ctrl+S
-- Error handling and display
-- Clipboard support
+    ```ipython
+    %load_ext aython
+    ```
 
-## Development
+2.  **Set your desired LLM:**
 
-### Running Tests
+    Aython uses `litellm` to connect to various LLM providers. Set your model by specifying the model name.
 
-First, make sure you have the development dependencies installed:
-```bash
-# Install with dev dependencies
-uv pip install -e .[dev]
-```
+    ```ipython
+    %set_model claude-3-opus-20240229
+    ```
 
-Then you can run the tests:
-```bash
-# Run all tests
-pytest
+    Or for OpenAI:
 
-# Run tests with output
-pytest -v
+    ```ipython
+    %set_model gpt-4-turbo
+    ```
 
-# Run tests with coverage
-pytest --cov=aython
-```
+    Or for Gemini:
+    ```ipython
+    %set_model gemini/gemini-2.0-flash-exp
+    ```
 
-### Continuous Integration
+    *Note: Ensure you have the necessary API keys (e.g., `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) set as environment variables.*
 
-The project uses GitHub Actions to run tests automatically on:
-- Pull request creation
-- Pull request updates
-- Pushes to main branch
+3.  **Generate code with the `%code` magic:**
 
-The CI pipeline:
-- Runs tests on Python 3.9, 3.10, and 3.11
-- Uses uv for fast dependency installation
-- Generates and uploads test coverage reports
-- Caches virtual environments for faster builds
+    Describe the function you want to create, and Aython will generate it, display it for review, and load it directly into your IPython session.
+
+    ```ipython
+    %code create a function that takes a list of numbers and returns the sum of squares
+    ```
+
+    After running the command, the generated function (e.g., `sum_of_squares`) will be available for you to use immediately.
+
+    ```ipython
+    my_list = [1, 2, 3]
+    sum_of_squares(my_list)  # Output: 14
+    ```
+
+## How It Works
+
+-   `%load_ext aython`: Loads the magic commands into your IPython environment.
+-   `%set_model <model_name>`: Sets the model to be used by `litellm`.
+-   `%code <description>`: Takes your natural language description, sends it to the configured LLM to generate Python code, displays the code for you, and then executes it in the current session, making the new function or class immediately available.
