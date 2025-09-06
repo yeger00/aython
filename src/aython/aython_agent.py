@@ -1,24 +1,19 @@
 import json
 
-import litellm
+from textwrap import dedent
 from pydantic import BaseModel
+from agno.agent import Agent, RunResponse
+from agno.models.openai import OpenAIChat
+from agno.models.google import Gemini
+from agno.storage.agent.sqlite import SqliteAgentStorage
+from agno.tools.reasoning import ReasoningTools
 
-
-class StaticAnalysis:
-    def check(self, code_snippet):
-        pass
-
-    def fix(self, code_snippet):
-        pass
-
-# TODO: understand if this is possible?
-class DynamicAnalysis:
-    def check(self, code_snippet):
-        pass
-
-    def fix(self, code_snippet):
-        pass
-
+def check_code(code_snippet: str) -> bool:
+    try:
+        compile(code_snippet, '<string>', 'exec')
+    except SyntaxError as e:
+        return False
+    return True
 
 class CodeResult(BaseModel):
     """A model to hold the generated code snippet."""
@@ -26,40 +21,53 @@ class CodeResult(BaseModel):
 
 
 class AythonAgent():
-    def __init__(self, model: str):
-        self.model = model
+    def __init__(self, model_str: str):
+        if "gemini" in model_str.lower():
+            model = Gemini(id=model_str)
+        elif "gpt" in model_str.lower():
+            model = OpenAIChat(id=model_str)
+        else:
+            raise ValueError(f"Error: Unsupported model name '{model_str}'. Please choose a Gemini or GPT model.")
+        
+        agent_storage_file: str = "tmp/agents.db"
+        self.agent = Agent(
+            name="MCP GitHub Agent",
+            instructions=dedent("""
+                You are a Python coding agent know how to write python code.
+            """),
+            model=model,
+            storage=SqliteAgentStorage(
+                table_name="basic_agent",
+                db_file=agent_storage_file,
+                auto_upgrade_schema=True,
+            ),
+            add_history_to_messages=True,
+            num_history_responses=3,
+            add_datetime_to_instructions=True,
+            markdown=True,
+            response_model=CodeResult,
+        )
 
-    def code(self, user_requirements: str) -> CodeResult:
-        """Generate and load code into the IPython scope."""
-        messages = [
-            {
-                "role": "user",
-                "content": f"Create a Python function that does the following: {user_requirements}.",
-            }
-        ]
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "code_result",
-                    "description": "A function to hold the generated code snippet.",
-                    "parameters": CodeResult.model_json_schema(),
-                },
-            }
-        ]
+        self.retries = 3
 
+    def code(self, user_requirements: str, current_context: str = "") -> CodeResult:
         try:
-            response = litellm.completion(
-                model=self.model,
-                messages=messages,
-                tools=tools,
-                tool_choice={"type": "function", "function": {"name": "code_result"}},
-            )
-            tool_call = response.choices[0].message.tool_calls[0]
-            arguments = json.loads(tool_call.function.arguments)
-            generated_code = CodeResult(**arguments).code_snippet
-            # TODO: use static and dynamic analysis in order to verify the code
-            # TODO: if the validation fail, use the llm again up to 3 tries.
-            return generated_code
+            i = 0
+            while i < self.retries:
+                instructions = """
+Create a Python function that does the following: {user_requirements}.
+                """
+                response: RunResponse = self.agent.run(
+                    instructions,
+                    stream=False,
+                    show_full_reasoning=True,
+                    stream_intermediate_steps=True,
+                )
+                generated_code = response.content.code_snippet
+                # TODO: after adding memory, just send the error instead of randomly re-generate
+                if check_code(generated_code):
+                    return generated_code
+                i += 1
+            # Failed to generate code
         except Exception as e:
             print(f"Error during code generation: {e}")
