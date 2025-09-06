@@ -21,15 +21,14 @@ class CodeResult(BaseModel):
 
 
 class AythonAgent():
-    def __init__(self, model_str: str):
+    def __init__(self, model_str: str, debug: bool = False):
         if "gemini" in model_str.lower():
             model = Gemini(id=model_str)
         elif "gpt" in model_str.lower():
             model = OpenAIChat(id=model_str)
         else:
             raise ValueError(f"Error: Unsupported model name '{model_str}'. Please choose a Gemini or GPT model.")
-        
-        agent_storage_file: str = "tmp/agents.db"
+        self.debug = debug
         self.agent = Agent(
             name="MCP GitHub Agent",
             instructions=dedent("""
@@ -38,7 +37,6 @@ class AythonAgent():
             model=model,
             storage=SqliteAgentStorage(
                 table_name="basic_agent",
-                db_file=agent_storage_file,
                 auto_upgrade_schema=True,
             ),
             add_history_to_messages=True,
@@ -54,9 +52,11 @@ class AythonAgent():
         try:
             i = 0
             while i < self.retries:
-                instructions = """
+                instructions = f"""
 Create a Python function that does the following: {user_requirements}.
                 """
+                if self.debug:
+                    print(instructions)
                 response: RunResponse = self.agent.run(
                     instructions,
                     stream=False,
