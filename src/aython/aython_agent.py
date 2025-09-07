@@ -1,12 +1,16 @@
+from functools import partial
 import json
 
 from textwrap import dedent
+from typing import Any
 from pydantic import BaseModel
 from agno.agent import Agent, RunResponse
 from agno.models.openai import OpenAIChat
 from agno.models.google import Gemini
 from agno.storage.agent.sqlite import SqliteAgentStorage
 from agno.tools.reasoning import ReasoningTools
+
+from python_runner import build_python_docker, run_python_docker
 
 def check_code(code_snippet: str) -> bool:
     try:
@@ -17,7 +21,11 @@ def check_code(code_snippet: str) -> bool:
 
 class CodeResult(BaseModel):
     """A model to hold the generated code snippet."""
+    name: str
     code_snippet: str
+    deps: list[str]
+    # TODO: add config
+    # config: Any
 
 
 class AythonAgent():
@@ -53,7 +61,14 @@ class AythonAgent():
             i = 0
             while i < self.retries:
                 instructions = f"""
-Create a Python function that does the following: {user_requirements}.
+You are a Python expert, that will help create a Python script for the user.
+The code you return will run inside a continaer from "python:3.11-slim".
+Every dependnecy the script is require to run, you should put in `deps`. 
+If there are no dependnecies, `deps` should be an empty list `[]`.
+The script itself should be in `code_snippet`.
+Decide on a `name`, use snake_case.
+
+user requirements: {user_requirements}.
                 """
                 if self.debug:
                     print(instructions)
@@ -63,11 +78,17 @@ Create a Python function that does the following: {user_requirements}.
                     show_full_reasoning=True,
                     stream_intermediate_steps=True,
                 )
-                generated_code = response.content.code_snippet
-                # TODO: after adding memory, just send the error instead of randomly re-generate
-                if check_code(generated_code):
-                    return generated_code
                 i += 1
+                generated_code = response.content.code_snippet
+                image_name = response.content.name
+                # TODO: after adding memory, just send the error instead of randomly re-generate
+                if not check_code(generated_code):
+                    print("failed to compile code, retring")
+                    continue
+                
+                build_python_docker(generated_code, response.content.deps, image_name)
+                return partial(run_python_docker, image_name)
+                
             # Failed to generate code
         except Exception as e:
             print(f"Error during code generation: {e}")
