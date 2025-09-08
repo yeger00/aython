@@ -48,26 +48,38 @@ class AythonAgent():
 
         self.retries = 3
 
+
     def code(self, user_requirements: str, current_context: str = "") -> CodeResult:
         try:
             i = 0
             while i < self.retries:
                 instructions = f"""
-Create a Python function that does the following: {user_requirements}.
+                Create a Python function that does the following: {user_requirements}.
+                Return ONLY valid JSON in this format:
+                {{
+                "code_snippet": "<your python code here>"
+                }}
                 """
                 if self.debug:
                     print(instructions)
+
                 response: RunResponse = self.agent.run(
                     instructions,
                     stream=False,
                     show_full_reasoning=True,
                     stream_intermediate_steps=True,
                 )
+
                 generated_code = response.content.code_snippet
-                # TODO: after adding memory, just send the error instead of randomly re-generate
+
                 if check_code(generated_code):
-                    return generated_code
+                    return CodeResult(code_snippet=generated_code)
+
                 i += 1
-            # Failed to generate code
+
+            # If all retries failed:
+            return CodeResult(code_snippet="")  # empty, signals failure
+
         except Exception as e:
             print(f"Error during code generation: {e}")
+            return CodeResult(code_snippet="")  # still return something
