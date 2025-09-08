@@ -38,24 +38,34 @@ class AythonMagics(Magics):
 
         code_text = result.code_snippet
         display(Code(code_text, language="python"))
-
+          # Prepare Out entry
+       
+        
+        out_entry = {
+            "generated code": code_text,  # Correctly capture stdout
+        }
+        self.shell.user_ns["Out"][self.shell.execution_count] = out_entry
         # Capture stdout, stderr, and display objects
         with capture_output() as captured:
             exec_result = self.shell.run_cell(code_text)
+            if exec_result is not None or exec_result != "":
+                    
+                # Prepare Out entry
+                out_entry.update({
+                    "result": exec_result.result,
+                    "stdout": captured.stdout,
+                    "stderr": captured.stderr,
+                    "display": [repr(o) for o in captured.outputs]
+                })
 
-        # Prepare Out entry
-        out_entry = {
-            "result": exec_result.result,
-            "stdout": captured.stdout,
-            "stderr": captured.stderr,
-            "display": [repr(o) for o in captured.outputs]
-        }
-
-        # Save to Out manually
-        if "Out" not in self.shell.user_ns:
-            self.shell.user_ns["Out"] = {}
-        self.shell.user_ns["_"] = exec_result.result
-        self.shell.user_ns["Out"][exec_result.execution_count] = out_entry
+                # Save to Out manually
+                if "Out" not in self.shell.user_ns:
+                    self.shell.user_ns["Out"] = {}
+                # This will save the result of the last executed cell
+                self.shell.user_ns["_"] = exec_result.result
+                # The key for the Out dictionary should be the execution count of the *current* cell
+        
+        self.shell.user_ns["Out"][self.shell.execution_count] = out_entry
 
     @line_magic
     def save_history(self, line):

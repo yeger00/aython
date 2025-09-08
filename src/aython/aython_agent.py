@@ -1,5 +1,4 @@
 import json
-
 from textwrap import dedent
 from pydantic import BaseModel
 from agno.agent import Agent, RunResponse
@@ -48,7 +47,6 @@ class AythonAgent():
 
         self.retries = 3
 
-
     def code(self, user_requirements: str, current_context: str = "") -> CodeResult:
         try:
             i = 0
@@ -70,7 +68,19 @@ class AythonAgent():
                     stream_intermediate_steps=True,
                 )
 
-                generated_code = response.content.code_snippet
+                try:
+                    # Attempt to access the code_snippet attribute
+                    generated_code = response.content.code_snippet
+                except AttributeError:
+                    # If response.content is a string instead of a CodeResult object,
+                    # it means the JSON parsing failed.
+                    print("Failed to parse model response into CodeResult model.")
+                    # Acknowledge the parsing error from the model by checking if
+                    # the content is not empty.
+                    if response.content:
+                        generated_code = str(response.content)
+                    else:
+                        generated_code = ""
 
                 if check_code(generated_code):
                     return CodeResult(code_snippet=generated_code)
