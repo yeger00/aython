@@ -1,62 +1,76 @@
-import json
-from unittest.mock import MagicMock, patch
-
 import pytest
-from IPython.testing.globalipapp import get_ipython
+from unittest.mock import patch, MagicMock
+from aython import AythonMagics
 
-from aython import AythonMagics, load_ipython_extension
+
+class MockIPythonShell:
+    def __init__(self):
+        self.user_ns = {"Out": {}}
+        self.execution_count = 1
+        self.history_manager = MagicMock()
+        self.history_manager.get_range.return_value = [
+            (0, 1, "%init_aython gemini-1.5-flash"),
+            (0, 2, "print('hi')"),
+        ]
+
+    def run_cell(self, code):
+        class Result:
+            result = "executed"
+        return Result()
 
 
 @pytest.fixture
 def ip():
-    """Fixture for a clean IPython instance."""
-    ip = get_ipython()
-    # Re-register the magics for each test
-    load_ipython_extension(ip)
-    return ip
+    return MockIPythonShell()
 
 
-def test_load_ipython_extension(ip):
-    """Test that the extension loads and registers the magics."""
-    assert "aython" in ip.magics_manager.magics
-    assert isinstance(ip.magics_manager.magics["line"]["set_model"].__self__, AythonMagics)
-    assert isinstance(ip.magics_manager.magics["line"]["code"].__self__, AythonMagics)
+def test_init_aython_magic(ip):
+    """Test the %init_aython magic command."""
+    with patch("aython.AythonAgent") as mock_agent_class:
+        mock_agent = MagicMock()
+        mock_agent_class.return_value = mock_agent
+
+        magics = AythonMagics(ip)
+        magics.init_aython("gemini-1.5-flash")
+
+        mock_agent_class.assert_called_once_with("gemini-1.5-flash")
+        assert magics.aython == mock_agent
 
 
-def test_set_model_magic(ip):
-    """Test the %set_model magic command."""
-    ip.run_line_magic("set_model", "my-model")
-    magics = ip.magics_manager.magics["line"]["set_model"].__self__
-    assert magics.model == "my-model"
+def test_code_magic_with_aython_agent(ip):
+    """Test the %code magic command with mocked AythonAgent."""
+    with patch("aython.AythonAgent") as mock_agent_class:
+        mock_agent = MagicMock()
+        mock_agent.code.return_value = MagicMock(code_snippet="print('hi')")
+        mock_agent_class.return_value = mock_agent
+
+        magics = AythonMagics(ip)
+        magics.init_aython("gemini-1.5-flash")
+        magics.code("say hello")
+
+        mock_agent.code.assert_called_once_with("say hello")
+        assert "generated code" in ip.user_ns["Out"][ip.execution_count]
 
 
-def test_code_magic_no_model(ip):
-    """Test the %code magic command without a model set."""
-    result = ip.run_line_magic("code", "create a function")
-    # This is a placeholder; in a real scenario, you'd capture stdout
-    # and assert the error message is present.
-    assert result is None
+def test_save_history(tmp_path, ip):
+    """Test %save_history writes a file with history and outputs."""
+    magics = AythonMagics(ip)
+    outfile = tmp_path / "history.json"
+
+    magics.save_history(str(outfile))
+
+    assert outfile.exists()
+    content = outfile.read_text()
+    assert "%init_aython" in content
 
 
-@patch("litellm.completion")
-def test_code_magic_with_model(mock_completion, ip):
-    """Test the %code magic command with a model set."""
-    # Mock the litellm.completion function to return a tool call
-    mock_response = MagicMock()
-    mock_choice = MagicMock()
-    mock_message = MagicMock()
-    mock_tool_call = MagicMock()
-    mock_function = MagicMock()
+def test_export_notebook(tmp_path, ip):
+    """Test %export_notebook writes a valid notebook file."""
+    magics = AythonMagics(ip)
+    outfile = tmp_path / "notebook.ipynb"
 
-    mock_function.arguments = json.dumps({"code_snippet": "def my_generated_function():\n    pass"})
-    mock_tool_call.function = mock_function
-    mock_message.tool_calls = [mock_tool_call]
-    mock_choice.message = mock_message
-    mock_response.choices = [mock_choice]
-    mock_completion.return_value = mock_response
+    magics.export_notebook(str(outfile))
 
-    ip.run_line_magic("set_model", "my-model")
-    ip.run_line_magic("code", "create a function")
-
-    # Check if the function is now in the user's namespace
-    assert "my_generated_function" in ip.user_ns
+    assert outfile.exists()
+    content = outfile.read_text()
+    assert "cells" in content
