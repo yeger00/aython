@@ -1,0 +1,29 @@
+services:
+  aython-agent:
+    build: ./agent
+    container_name: aython-agent
+    env_file:
+      - .env
+    ports:
+      - "4000:4000" # JSON-RPC server
+    restart: unless-stopped
+
+  aython-magics:
+    build: ./magics
+    container_name: aython-magics
+    depends_on:
+      - aython-agent
+    env_file:
+      - .env
+    ports:
+      - "8888:8888"
+    command: >
+      jupyter lab
+      --ip=0.0.0.0
+      --port=8888
+      --allow-root
+      --LabApp.token=''
+
+    volumes:
+      - ./magics:/app
+    restart: unless-stopped
